@@ -1,29 +1,27 @@
 import { createServerClient, type CookieMethodsServer } from "@supabase/ssr";
-import { NextResponse, type NextRequest } from "next/server";
+import { cookies } from "next/headers";
 
-export async function updateSession(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request });
+export async function createClient() {
+  const cookieStore = cookies();
 
-  const cookies: CookieMethodsServer = {
+  const cookiesConfig: CookieMethodsServer = {
     getAll() {
-      return request.cookies.getAll();
+      return cookieStore.getAll();
     },
     setAll(cookiesToSet) {
-      cookiesToSet.forEach(({ name, value }) =>
-        request.cookies.set(name, value)
-      );
-      supabaseResponse = NextResponse.next({ request });
-      cookiesToSet.forEach(({ name, value, options }) =>
-        supabaseResponse.cookies.set(name, value, options)
-      );
+      try {
+        cookiesToSet.forEach(({ name, value, options }) =>
+          cookieStore.set(name, value, options)
+        );
+      } catch {
+        // Called from Server Component - safe to ignore
+      }
     }
   };
 
-  const supabase = createServerClient(
+  return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { cookies }
+    { cookies: cookiesConfig }
   );
-
-  // ... remaining logic unchanged
 }
