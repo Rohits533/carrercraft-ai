@@ -1,20 +1,12 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 
 if (!process.env.GEMINI_API_KEY) {
   console.warn("GEMINI_API_KEY is not set");
 }
 
-export const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+export const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
 
-// Replace the original "gemini-1.5-flash" with "gemini-3.8-flash"
 export const GEMINI_MODEL = "gemini-3.8-flash";
-
-export function getModel(systemInstruction?: string) {
-  return genAI.getGenerativeModel({
-    model: GEMINI_MODEL,
-    ...(systemInstruction ? { systemInstruction } : {})
-  });
-}
 
 export function extractJSON<T = unknown>(text: string): T {
   const cleaned = text
