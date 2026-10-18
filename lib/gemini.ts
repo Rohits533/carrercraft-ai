@@ -6,7 +6,8 @@ if (!process.env.GEMINI_API_KEY) {
 
 export const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
-export const GEMINI_MODEL = "gemini-2.0-flash";
+// Replace the original "gemini-1.5-flash" with "gemini-3.8-flash"
+export const GEMINI_MODEL = "gemini-3.8-flash";
 
 export function getModel(systemInstruction?: string) {
   return genAI.getGenerativeModel({
@@ -16,7 +17,6 @@ export function getModel(systemInstruction?: string) {
 }
 
 export function extractJSON<T = unknown>(text: string): T {
-  // Handles ```json ... ``` wrapped responses or raw JSON
   const cleaned = text
     .replace(/^```json\s*/i, "")
     .replace(/^```\s*/i, "")
