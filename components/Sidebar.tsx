@@ -45,4 +45,46 @@ export default function Sidebar({ email }: { email?: string }) {
 
         <nav className="space-y-1">
           {navItems.map((item) => {
-           
+            const active =
+              item.href === "/dashboard"
+                ? pathname === "/dashboard"
+                : pathname.startsWith(item.href);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition ${
+                  active
+                    ? "bg-slate-100 text-navy-900"
+                    : "text-slate-600 hover:bg-slate-50 hover:text-navy-900"
+                }`}
+              >
+                {active && (
+                  <motion.span
+                    layoutId="sidebar-active"
+                    className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-indigo-600"
+                  />
+                )}
+                <item.icon className="h-4 w-4" />
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
+      </div>
+
+      <div className="mt-8">
+        <div className="mb-3 truncate rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500">
+          {email || "Signed in"}
+        </div>
+        <button
+          onClick={handleSignOut}
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50 hover:text-navy-900"
+        >
+          <LogOut className="h-4 w-4" />
+          Sign out
+        </button>
+      </div>
+    </aside>
+  );
+}
