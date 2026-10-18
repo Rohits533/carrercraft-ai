@@ -107,4 +107,33 @@ export default function ProfilePage() {
                 value={resumeText}
                 onChange={(e) => setResumeText(e.target.value)}
                 rows={10}
-                placeholder="Paste your resume
+                placeholder="Paste your resume here to save it for later..."
+                className="w-full resize-y rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm leading-relaxed text-navy-900 outline-none transition focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-100"
+              />
+            </div>
+          </div>
+
+          <div className="mt-5 flex items-center gap-3">
+            <button
+              onClick={save}
+              disabled={saving}
+              className="inline-flex items-center gap-2 rounded-lg bg-navy-900 px-5 py-2.5 text-sm font-medium text-white shadow-soft transition hover:bg-navy-800 disabled:opacity-60"
+            >
+              {saving ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4" />
+              )}
+              Save changes
+            </button>
+            {saved && (
+              <span className="text-sm font-medium text-emerald-600">
+                Saved!
+              </span>
+            )}
+          </div>
+        </div>
+      </MotionWrapper>
+    </div>
+  );
+}
