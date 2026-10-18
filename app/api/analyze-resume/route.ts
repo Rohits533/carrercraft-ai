@@ -4,7 +4,17 @@ import { createClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 
-const SYSTEM = `You are an expert ATS analyzer... Return ONLY valid JSON with shape { score, summary, missingKeywords, strengths, improvements, structureNotes }.`;
+const SYSTEM = `You are an expert ATS (Applicant Tracking System) analyzer and resume coach.
+Analyze resumes objectively and return ONLY valid JSON with this exact shape:
+{
+  "score": <integer 0-100>,
+  "summary": "<2-3 sentence assessment>",
+  "missingKeywords": ["..."],
+  "strengths": ["..."],
+  "improvements": ["..."],
+  "structureNotes": ["..."]
+}
+Do not include markdown, commentary, or code fences. Return only the JSON object.`;
 
 type Analysis = {
   score: number;
@@ -19,7 +29,10 @@ export async function POST(req: Request) {
   try {
     const { resume } = await req.json();
     if (!resume || typeof resume !== "string" || resume.trim().length < 60) {
-      return NextResponse.json({ error: "Resume text is too short." }, { status: 400 });
+      return NextResponse.json(
+        { error: "Resume text is too short." },
+        { status: 400 }
+      );
     }
 
     const result = await ai.models.generateContent({
@@ -28,11 +41,13 @@ export async function POST(req: Request) {
       config: { systemInstruction: SYSTEM }
     });
 
-    const analysis = extractJSON<Analysis>(result.text);
+    const analysis = extractJSON<Analysis>(result.text ?? "");
 
     try {
       const supabase = await createClient();
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user }
+      } = await supabase.auth.getUser();
       if (user) {
         await supabase.from("profiles").upsert({
           id: user.id,
@@ -43,11 +58,16 @@ export async function POST(req: Request) {
           updated_at: new Date().toISOString()
         });
       }
-    } catch {}
+    } catch {
+      // Persistence is best-effort
+    }
 
     return NextResponse.json({ analysis });
   } catch (err) {
     console.error("analyze-resume error:", err);
-    return NextResponse.json({ error: "Failed to analyze resume." }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to analyze resume. Please try again." },
+      { status: 500 }
+    );
   }
 }
