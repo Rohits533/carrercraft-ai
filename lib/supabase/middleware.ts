@@ -12,7 +12,13 @@ export async function updateSession(request: NextRequest) {
         getAll() {
           return request.cookies.getAll();
         },
-        setAll(cookiesToSet) {
+        setAll(
+          cookiesToSet: {
+            name: string;
+            value: string;
+            options?: Record<string, unknown>;
+          }[]
+        ) {
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           );
@@ -31,7 +37,6 @@ export async function updateSession(request: NextRequest) {
 
   const isAuthPage = request.nextUrl.pathname.startsWith("/login");
   const isDashboard = request.nextUrl.pathname.startsWith("/dashboard");
-  const isAuthCallback = request.nextUrl.pathname.startsWith("/auth");
 
   if (!user && isDashboard) {
     const url = request.nextUrl.clone();
