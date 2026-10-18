@@ -1,27 +1,48 @@
 import { createServerClient, type CookieMethodsServer } from "@supabase/ssr";
-import { cookies } from "next/headers";
+import { NextResponse, type NextRequest } from "next/server";
 
-export async function createClient() {
-  const cookieStore = cookies();
+export async function updateSession(request: NextRequest) {
+  let supabaseResponse = NextResponse.next({ request });
 
-  const cookiesConfig: CookieMethodsServer = {
+  const cookies: CookieMethodsServer = {
     getAll() {
-      return cookieStore.getAll();
+      return request.cookies.getAll();
     },
     setAll(cookiesToSet) {
-      try {
-        cookiesToSet.forEach(({ name, value, options }) =>
-          cookieStore.set(name, value, options)
-        );
-      } catch {
-        // Called from Server Component - safe to ignore
-      }
+      cookiesToSet.forEach(({ name, value }) =>
+        request.cookies.set(name, value)
+      );
+      supabaseResponse = NextResponse.next({ request });
+      cookiesToSet.forEach(({ name, value, options }) =>
+        supabaseResponse.cookies.set(name, value, options)
+      );
     }
   };
 
-  return createServerClient(
+  const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { cookies: cookiesConfig }
+    { cookies }
   );
+
+  const {
+    data: { user }
+  } = await supabase.auth.getUser();
+
+  const isAuthPage = request.nextUrl.pathname.startsWith("/login");
+  const isDashboard = request.nextUrl.pathname.startsWith("/dashboard");
+
+  if (!user && isDashboard) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
+    return NextResponse.redirect(url);
+  }
+
+  if (user && isAuthPage) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/dashboard";
+    return NextResponse.redirect(url);
+  }
+
+  return supabaseResponse;
 }
