@@ -1,3 +1,45 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 248 250 252;
+  --foreground: 15 23 42;
+}
+
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+body {
+  color: rgb(var(--foreground));
+  background: rgb(var(--background));
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: rgba(100, 116, 139, 0.4);
+    border-radius: 9999px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
+
 @media print {
   body {
     background: white !important;
@@ -8,7 +50,7 @@
   aside,
   nav,
   button,
-  .print\\:hidden {
+  .print\:hidden {
     display: none !important;
   }
   main,
@@ -16,12 +58,10 @@
     padding: 0 !important;
     margin: 0 !important;
     max-width: 100% !important;
+    overflow: visible !important;
   }
   .shadow-soft,
   .shadow-card {
     box-shadow: none !important;
-  }
-  a[href]:after {
-    content: "";
   }
 }
