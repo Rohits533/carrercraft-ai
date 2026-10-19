@@ -22,11 +22,7 @@ type Feedback = {
   sampleAnswer: string;
 };
 
-export default function InterviewPrep({
-  hasResume
-}: {
-  hasResume: boolean;
-}) {
+export default function InterviewPrep() {
   const [role, setRole] = useState("");
   const [questions, setQuestions] = useState<Question[] | null>(null);
   const [loadingQuestions, setLoadingQuestions] = useState(false);
@@ -37,10 +33,6 @@ export default function InterviewPrep({
   const [error, setError] = useState<string | null>(null);
 
   const generateQuestions = async () => {
-    if (!hasResume) {
-      setError("Please save a resume first in Resume Studio.");
-      return;
-    }
     setError(null);
     setLoadingQuestions(true);
     setQuestions(null);
@@ -53,8 +45,8 @@ export default function InterviewPrep({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ role })
       });
-      if (!res.ok) throw new Error("Failed to generate questions");
       const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to generate questions");
       setQuestions(data.questions);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
@@ -82,8 +74,8 @@ export default function InterviewPrep({
           role
         })
       });
-      if (!res.ok) throw new Error("Failed to get feedback");
       const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to get feedback");
       setFeedback(data.feedback);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
@@ -116,8 +108,9 @@ export default function InterviewPrep({
             Set up your practice session
           </h2>
           <p className="mt-1 text-sm text-slate-600">
-            Questions are generated from your saved resume. Optionally specify a
-            target role.
+            Questions are generated from your saved resume. Make sure you have
+            one saved in Resume Studio or your Profile first. Optionally specify
+            a target role.
           </p>
           <div className="mt-4 flex flex-col gap-3 sm:flex-row">
             <input
