@@ -2,7 +2,13 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, X, Send, Loader2, MessageSquare, Minimize2 } from "lucide-react";
+import {
+  Sparkles,
+  Send,
+  Loader2,
+  MessageSquare,
+  Minimize2
+} from "lucide-react";
 
 type Message = { role: "user" | "assistant"; content: string };
 
@@ -17,6 +23,7 @@ export default function FloatingChat() {
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -26,16 +33,25 @@ export default function FloatingChat() {
     });
   }, [messages, loading]);
 
+  // Cooldown countdown when rate-limited
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const t = setTimeout(() => setCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [cooldown]);
+
   const send = async () => {
     const trimmed = input.trim();
-    if (!trimmed || loading) return;
-    const nextMessages: Message[] = [
-      ...messages,
-      { role: "user", content: trimmed }
-    ];
+    if (!trimmed || loading || cooldown > 0) return;
+
+    const userMsg: Message = { role: "user", content: trimmed };
+    const nextMessages = [...messages, userMsg];
     setMessages(nextMessages);
     setInput("");
     setLoading(true);
+
+    // Placeholder assistant message that will be filled by the stream
+    setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
 
     try {
       const res = await fetch("/api/chat", {
@@ -48,21 +64,63 @@ export default function FloatingChat() {
           }))
         })
       });
-      if (!res.ok) throw new Error("Chat failed");
-      const data = await res.json();
-      setMessages([
-        ...nextMessages,
-        { role: "assistant", content: data.reply }
-      ]);
+
+      if (res.status === 429) {
+        const data = await res.json().catch(() => ({}));
+        const msg =
+          data.message ||
+          "I'm thinking too fast — please wait a moment and try again.";
+        setMessages((prev) => {
+          const copy = [...prev];
+          copy[copy.length - 1] = { role: "assistant", content: msg };
+          return copy;
+        });
+        setCooldown(5);
+        return;
+      }
+
+      if (!res.ok || !res.body) {
+        throw new Error("Chat failed");
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let accumulated = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        accumulated += decoder.decode(value, { stream: true });
+        setMessages((prev) => {
+          const copy = [...prev];
+          copy[copy.length - 1] = {
+            role: "assistant",
+            content: accumulated
+          };
+          return copy;
+        });
+      }
+
+      if (!accumulated) {
+        setMessages((prev) => {
+          const copy = [...prev];
+          copy[copy.length - 1] = {
+            role: "assistant",
+            content: "I couldn't form a reply just now. Try again?"
+          };
+          return copy;
+        });
+      }
     } catch {
-      setMessages([
-        ...nextMessages,
-        {
+      setMessages((prev) => {
+        const copy = [...prev];
+        copy[copy.length - 1] = {
           role: "assistant",
           content:
             "Sorry, I couldn't respond just now. Please try again in a moment."
-        }
-      ]);
+        };
+        return copy;
+      });
     } finally {
       setLoading(false);
     }
@@ -75,9 +133,10 @@ export default function FloatingChat() {
     }
   };
 
+  const disabled = loading || cooldown > 0 || !input.trim();
+
   return (
     <>
-      {/* Launcher */}
       <AnimatePresence>
         {!open && (
           <motion.button
@@ -93,7 +152,6 @@ export default function FloatingChat() {
         )}
       </AnimatePresence>
 
-      {/* Chat panel */}
       <AnimatePresence>
         {open && (
           <motion.div
@@ -103,7 +161,6 @@ export default function FloatingChat() {
             transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
             className="fixed bottom-6 right-6 z-50 flex h-[520px] w-[min(400px,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card"
           >
-            {/* Header */}
             <div className="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3">
               <div className="flex items-center gap-2">
                 <div className="grid h-8 w-8 place-items-center rounded-lg bg-navy-900 text-white">
@@ -128,7 +185,6 @@ export default function FloatingChat() {
               </button>
             </div>
 
-            {/* Messages */}
             <div
               ref={scrollRef}
               className="flex-1 space-y-3 overflow-y-auto bg-slate-50/60 px-4 py-4 scrollbar-thin"
@@ -136,7 +192,9 @@ export default function FloatingChat() {
               {messages.map((m, i) => (
                 <div
                   key={i}
-                  className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
+                  className={`flex ${
+                    m.role === "user" ? "justify-end" : "justify-start"
+                  }`}
                 >
                   <div
                     className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${
@@ -145,22 +203,24 @@ export default function FloatingChat() {
                         : "border border-slate-200 bg-white text-navy-900 shadow-soft"
                     }`}
                   >
-                    {m.content}
+                    {m.content || (loading && i === messages.length - 1 ? (
+                      <span className="inline-flex items-center gap-1 text-slate-400">
+                        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-slate-400" />
+                        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-slate-400 [animation-delay:120ms]" />
+                        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-slate-400 [animation-delay:240ms]" />
+                      </span>
+                    ) : null)}
                   </div>
                 </div>
               ))}
-              {loading && (
-                <div className="flex justify-start">
-                  <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-500 shadow-soft">
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    Thinking...
-                  </div>
-                </div>
-              )}
             </div>
 
-            {/* Input */}
             <div className="border-t border-slate-200 bg-white p-3">
+              {cooldown > 0 && (
+                <div className="mb-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                  Take a breath — you can send again in {cooldown}s.
+                </div>
+              )}
               <div className="flex items-end gap-2">
                 <textarea
                   value={input}
@@ -172,11 +232,15 @@ export default function FloatingChat() {
                 />
                 <button
                   onClick={send}
-                  disabled={loading || !input.trim()}
+                  disabled={disabled}
                   className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-navy-900 text-white transition hover:bg-navy-800 disabled:opacity-40"
                   aria-label="Send message"
                 >
-                  <Send className="h-4 w-4" />
+                  {loading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}
                 </button>
               </div>
             </div>
