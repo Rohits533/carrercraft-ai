@@ -1,13 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Loader2,
   MessagesSquare,
   Sparkles,
   ArrowRight,
-  RotateCcw
+  RotateCcw,
+  FileText
 } from "lucide-react";
 
 type Question = {
@@ -31,9 +33,11 @@ export default function InterviewPrep() {
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [loadingFeedback, setLoadingFeedback] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [noResume, setNoResume] = useState(false);
 
   const generateQuestions = async () => {
     setError(null);
+    setNoResume(false);
     setLoadingQuestions(true);
     setQuestions(null);
     setFeedback(null);
@@ -46,8 +50,15 @@ export default function InterviewPrep() {
         body: JSON.stringify({ role })
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to generate questions");
-      setQuestions(data.questions);
+      if (!res.ok) {
+        if (res.status === 400 && /resume/i.test(data.error || "")) {
+          setNoResume(true);
+        } else {
+          throw new Error(data.error || "Failed to generate questions");
+        }
+      } else {
+        setQuestions(data.questions);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
     } finally {
@@ -98,19 +109,44 @@ export default function InterviewPrep() {
     setAnswer("");
     setCurrent(0);
     setError(null);
+    setNoResume(false);
   };
 
   return (
     <div className="space-y-6">
+      {noResume && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6">
+          <div className="flex items-start gap-3">
+            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-amber-100 text-amber-700">
+              <FileText className="h-4 w-4" />
+            </div>
+            <div>
+              <h3 className="font-display text-sm font-semibold text-navy-900">
+                No resume saved yet
+              </h3>
+              <p className="mt-1 text-sm text-amber-800">
+                Interview questions are generated from your resume. Save one
+                first and we'll tailor questions to your background.
+              </p>
+              <Link
+                href="/dashboard/resume"
+                className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-navy-900 px-3.5 py-2 text-xs font-medium text-white transition hover:bg-navy-800"
+              >
+                Upload a resume <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+
       {!questions && (
         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-soft">
           <h2 className="font-display text-base font-semibold text-navy-900">
             Set up your practice session
           </h2>
           <p className="mt-1 text-sm text-slate-600">
-            Questions are generated from your saved resume. Make sure you have
-            one saved in Resume Studio or your Profile first. Optionally specify
-            a target role.
+            Questions are generated from your saved resume. Optionally specify a
+            target role.
           </p>
           <div className="mt-4 flex flex-col gap-3 sm:flex-row">
             <input
