@@ -3,7 +3,7 @@ import type { Config } from "tailwindcss";
 const config: Config = {
   content: [
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
-    "./components/**/*.{js,ts,jsx,tsx,mdx}"
+    "./components/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
     extend: {
@@ -32,15 +32,6 @@ const config: Config = {
         card: "0 1px 2px rgba(15,23,42,0.04), 0 8px 32px -8px rgba(15,23,42,0.08)",
         glow: "0 0 0 1px rgba(99,102,241,0.12), 0 8px 32px -8px rgba(99,102,241,0.32)"
       },
-      animation: {
-        "fade-in": "fadeIn 0.4s ease-out"
-      },
-      keyframes: {
-        fadeIn: {
-          "0%": { opacity: "0", transform: "translateY(4px)" },
-          "100%": { opacity: "1", transform: "translateY(0)" }
-        }
-      }
     }
   },
   plugins: []
