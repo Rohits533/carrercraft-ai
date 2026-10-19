@@ -3,6 +3,7 @@ import { ai, GEMINI_MODEL, extractJSON } from "@/lib/gemini";
 import { createClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 const SYSTEM = `You are an expert ATS (Applicant Tracking System) analyzer and resume coach.
 Analyze resumes objectively and return ONLY valid JSON with this exact shape:
