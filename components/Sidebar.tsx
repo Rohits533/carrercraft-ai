@@ -32,7 +32,7 @@ export default function Sidebar({ email }: { email?: string }) {
   };
 
   return (
-    <aside className="flex h-full w-full flex-col justify-between border-r border-slate-200 bg-white p-5">
+    <div className="flex h-full w-full flex-col justify-between p-5">
       <div>
         <Link href="/dashboard" className="mb-8 flex items-center gap-2">
           <div className="grid h-9 w-9 place-items-center rounded-xl bg-navy-900 text-white shadow-soft">
@@ -85,6 +85,6 @@ export default function Sidebar({ email }: { email?: string }) {
           Sign out
         </button>
       </div>
-    </aside>
+    </div>
   );
 }
