@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Loader2, Save, User as UserIcon } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Loader2, Save, User as UserIcon, Upload } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import MotionWrapper from "@/components/MotionWrapper";
 
@@ -9,10 +9,13 @@ export default function ProfilePage() {
   const supabase = createClient();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
   const [resumeText, setResumeText] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -33,14 +36,37 @@ export default function ProfilePage() {
     load();
   }, [supabase]);
 
+  const handlePdfUpload = async (file: File) => {
+    setError(null);
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/upload-resume", {
+        method: "POST",
+        body: fd
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Upload failed");
+      setResumeText(data.text);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Upload failed.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const save = async () => {
     setSaving(true);
     setSaved(false);
+    setError(null);
     const {
       data: { user }
     } = await supabase.auth.getUser();
     if (!user) return;
-    await supabase.from("profiles").upsert({
+    const { error: upsertError } = await supabase.from("profiles").upsert({
       id: user.id,
       email: user.email,
       full_name: fullName,
@@ -48,6 +74,10 @@ export default function ProfilePage() {
       updated_at: new Date().toISOString()
     });
     setSaving(false);
+    if (upsertError) {
+      setError("Couldn't save. Check Supabase schema.");
+      return;
+    }
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
   };
@@ -100,18 +130,47 @@ export default function ProfilePage() {
               />
             </div>
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-navy-900">
-                Saved resume
-              </label>
+              <div className="mb-1.5 flex items-center justify-between">
+                <label className="text-sm font-medium text-navy-900">
+                  Saved resume
+                </label>
+                <div>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="application/pdf"
+                    className="hidden"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) handlePdfUpload(f);
+                      e.target.value = "";
+                    }}
+                  />
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                    className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-navy-900 shadow-soft transition hover:border-slate-300 disabled:opacity-60"
+                  >
+                    {uploading ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Upload className="h-3.5 w-3.5" />
+                    )}
+                    {uploading ? "Extracting..." : "Upload PDF"}
+                  </button>
+                </div>
+              </div>
               <textarea
                 value={resumeText}
                 onChange={(e) => setResumeText(e.target.value)}
                 rows={10}
-                placeholder="Paste your resume here to save it for later..."
+                placeholder="Paste your resume here, or upload a PDF above..."
                 className="w-full resize-y rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm leading-relaxed text-navy-900 outline-none transition focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-100"
               />
             </div>
           </div>
+
+          {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
 
           <div className="mt-5 flex items-center gap-3">
             <button
