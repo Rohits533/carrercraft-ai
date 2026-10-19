@@ -1,19 +1,7 @@
-import { createClient } from "@/lib/supabase/server";
 import MotionWrapper from "@/components/MotionWrapper";
 import InterviewPrep from "@/components/InterviewPrep";
 
-export default async function InterviewPage() {
-  const supabase = await createClient();
-  const {
-    data: { user }
-  } = await supabase.auth.getUser();
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("resume_text")
-    .eq("id", user!.id)
-    .single();
-
+export default function InterviewPage() {
   return (
     <div className="space-y-6">
       <MotionWrapper>
@@ -28,7 +16,7 @@ export default async function InterviewPage() {
         </div>
       </MotionWrapper>
       <MotionWrapper delay={0.1}>
-        <InterviewPrep hasResume={!!profile?.resume_text} />
+        <InterviewPrep />
       </MotionWrapper>
     </div>
   );
