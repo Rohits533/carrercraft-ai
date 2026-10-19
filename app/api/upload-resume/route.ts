@@ -48,6 +48,23 @@ export async function POST(req: Request) {
       );
     }
 
+    // 1. Save the PDF file to Supabase Storage (best-effort)
+    try {
+      const storagePath = `${user.id}/resume.pdf`;
+      const { error: storageError } = await supabase.storage
+        .from("resumes")
+        .upload(storagePath, buffer, {
+          contentType: "application/pdf",
+          upsert: true
+        });
+      if (storageError) {
+        console.warn("storage upload failed (non-fatal):", storageError.message);
+      }
+    } catch (storageErr) {
+      console.warn("storage upload exception (non-fatal):", storageErr);
+    }
+
+    // 2. Save the extracted text to profiles (required for AI features)
     const { error: updateError } = await supabase
       .from("profiles")
       .upsert({
