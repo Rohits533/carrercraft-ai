@@ -1,41 +1,27 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-:root {
-  --background: 248 250 252;
-  --foreground: 15 23 42;
-}
-
-* {
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-html,
-body {
-  max-width: 100vw;
-  overflow-x: hidden;
-}
-
-body {
-  color: rgb(var(--foreground));
-  background: rgb(var(--background));
-}
-
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
-  .scrollbar-thin::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+  aside,
+  nav,
+  button,
+  .print\\:hidden {
+    display: none !important;
   }
-  .scrollbar-thin::-webkit-scrollbar-thumb {
-    background: rgba(100, 116, 139, 0.4);
-    border-radius: 9999px;
+  main,
+  .print-area {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
   }
-  .scrollbar-thin::-webkit-scrollbar-track {
-    background: transparent;
+  .shadow-soft,
+  .shadow-card {
+    box-shadow: none !important;
+  }
+  a[href]:after {
+    content: "";
   }
 }
