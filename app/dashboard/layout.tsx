@@ -16,15 +16,20 @@ export default async function DashboardLayout({
   if (!user) redirect("/login");
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50">
-      <div className="hidden w-64 shrink-0 md:block print:hidden">
+    <div className="flex h-screen w-full bg-slate-50 overflow-hidden">
+      {/* Sidebar Container - fixed width, hidden on mobile, hidden on print */}
+      <aside className="hidden w-64 shrink-0 md:flex flex-col border-r border-slate-200 bg-white print:hidden">
         <Sidebar email={user.email} />
-      </div>
-      <main className="flex-1 overflow-y-auto scrollbar-thin">
-        <div className="mx-auto max-w-5xl px-6 py-10 print:max-w-full print:px-0 print:py-0">
+      </aside>
+
+      {/* Main Content Area - takes up remaining space, scrollable */}
+      <main className="flex-1 flex flex-col overflow-y-auto scrollbar-thin">
+        <div className="mx-auto w-full max-w-5xl px-6 py-10 print:max-w-full print:px-0 print:py-0">
           {children}
         </div>
       </main>
+
+      {/* Floating Chat - hidden on print */}
       <div className="print:hidden">
         <FloatingChat />
       </div>
