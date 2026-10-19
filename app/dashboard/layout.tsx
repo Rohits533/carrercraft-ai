@@ -17,13 +17,17 @@ export default async function DashboardLayout({
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50">
-      <div className="hidden w-64 shrink-0 md:block">
+      <div className="hidden w-64 shrink-0 md:block print:hidden">
         <Sidebar email={user.email} />
       </div>
       <main className="flex-1 overflow-y-auto scrollbar-thin">
-        <div className="mx-auto max-w-5xl px-6 py-10">{children}</div>
+        <div className="mx-auto max-w-5xl px-6 py-10 print:max-w-full print:px-0 print:py-0">
+          {children}
+        </div>
       </main>
-      <FloatingChat />
+      <div className="print:hidden">
+        <FloatingChat />
+      </div>
     </div>
   );
 }
