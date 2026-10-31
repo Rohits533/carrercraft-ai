@@ -1,18 +1,27 @@
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import MotionWrapper from "@/components/MotionWrapper";
 import ResumeAnalyzer from "@/components/ResumeAnalyzer";
 
 export default async function ResumePage() {
   const supabase = await createClient();
+  
   const {
-    data: { user }
+    data: { user },
   } = await supabase.auth.getUser();
 
+  // 1. Guard against unauthenticated visitors (Prevents null.id crash)
+  if (!user) {
+    redirect("/login");
+  }
+
+  // 2. Safely query using validated user.id
+  // Switched .single() to .maybeSingle() to prevent crash if profile row does not exist yet
   const { data: profile } = await supabase
     .from("profiles")
     .select("resume_text")
-    .eq("id", user!.id)
-    .single();
+    .eq("id", user.id)
+    .maybeSingle();
 
   return (
     <div className="space-y-6">
