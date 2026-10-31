@@ -6,17 +6,11 @@ export async function updateSession(request: NextRequest) {
 
   try {
     const cookies: CookieMethodsServer = {
-      getAll() {
-        return request.cookies.getAll();
-      },
+      getAll() { return request.cookies.getAll(); },
       setAll(cookiesToSet) {
-        cookiesToSet.forEach(({ name, value }) =>
-          request.cookies.set(name, value)
-        );
+        cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
         supabaseResponse = NextResponse.next({ request });
-        cookiesToSet.forEach(({ name, value, options }) =>
-          supabaseResponse.cookies.set(name, value, options)
-        );
+        cookiesToSet.forEach(({ name, value, options }) => supabaseResponse.cookies.set(name, value, options));
       }
     };
 
@@ -26,15 +20,14 @@ export async function updateSession(request: NextRequest) {
       { cookies }
     );
 
-    const {
-      data: { user }
-    } = await supabase.auth.getUser();
+    const { data: { user } } = await supabase.auth.getUser();
 
     const path = request.nextUrl.pathname;
     const isAuthPage = path.startsWith("/login");
     const isDashboard = path.startsWith("/dashboard");
+    const isGuestResume = path === "/dashboard/resume" && request.nextUrl.searchParams.get("guest") === "true";
 
-    if (!user && isDashboard) {
+    if (!user && isDashboard && !isGuestResume) {
       const url = request.nextUrl.clone();
       url.pathname = "/login";
       return NextResponse.redirect(url);
