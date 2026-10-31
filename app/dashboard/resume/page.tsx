@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import MotionWrapper from "@/components/MotionWrapper";
 import ResumeAnalyzer from "@/components/ResumeAnalyzer";
@@ -6,22 +5,25 @@ import ResumeAnalyzer from "@/components/ResumeAnalyzer";
 export default async function ResumePage() {
   const supabase = await createClient();
   
+  // Safely fetch user without throwing an unhandled exception
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // 1. Guard against unauthenticated visitors (Prevents null.id crash)
-  if (!user) {
-    redirect("/login");
-  }
+  let initialResumeText = "";
 
-  // 2. Safely query using validated user.id
-  // Switched .single() to .maybeSingle() to prevent crash if profile row does not exist yet
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("resume_text")
-    .eq("id", user.id)
-    .maybeSingle();
+  // Only query Supabase database if a real user is signed in
+  if (user?.id) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("resume_text")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (profile?.resume_text) {
+      initialResumeText = profile.resume_text;
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -33,10 +35,15 @@ export default async function ResumePage() {
           <p className="mt-1 text-sm text-slate-600">
             Get an ATS score, keyword gaps, and role matches in one pass.
           </p>
+          {!user && (
+            <div className="mt-2 rounded-md bg-amber-50 p-2 text-xs text-amber-800 border border-amber-200">
+              ⚡ <strong>Guest Mode:</strong> You are using Resume Studio as a guest. Log in to save your results automatically.
+            </div>
+          )}
         </div>
       </MotionWrapper>
       <MotionWrapper delay={0.1}>
-        <ResumeAnalyzer initialResume={profile?.resume_text || ""} />
+        <ResumeAnalyzer initialResume={initialResumeText} />
       </MotionWrapper>
     </div>
   );
